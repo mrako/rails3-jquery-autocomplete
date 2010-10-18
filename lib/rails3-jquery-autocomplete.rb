@@ -37,14 +37,31 @@ module Rails3JQueryAutocomplete
           items = {}
         end
 
-        render :json => json_for_autocomplete(items, (options[:display_value] ? options[:display_value] : method))
+        render :json => json_for_autocomplete(items, (options[:display_value] ? options[:display_value] : method), options[:labels], options[:sub_elements])
       end
     end
   end
 
   private
-  def json_for_autocomplete(items, method)
-    items.collect {|i| {"id" => i.id, "label" => i.send(method), "value" => i.send(method)}}
+  def json_for_autocomplete(items, method, labels = nil, sub_elements = [])
+    items.collect {|i|
+      {"id" => i.id,
+        "label" => (labels ? read_labels(i, labels) : i.send(method)),
+        "value" => i.send(method)
+      }.merge(read_sub_elements(i, sub_elements))
+    }
+  end
+  
+  def read_sub_elements(i, elements)
+    Hash.new.tap do |h|
+      elements.collect {|e|
+        h[e] = i.send(e).to_s if i.send(e)
+      } unless elements.blank?
+    end
+  end
+  
+  def read_labels(item, labels)
+    labels.collect {|l| item.send(l)}.compact.join(', ')
   end
 end
 
